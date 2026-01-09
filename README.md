@@ -2,18 +2,48 @@
 
 Web app buat scan heatmap YouTube (Most Replayed) lalu bikin clip otomatis (vertical-ready) dengan opsi subtitle AI.
 
+Ini versi web dari proyek original: https://github.com/0xACAB666/yt-heatmap-clipper (yang CLI-nya galak, yang web-nya lebih “manusiawi”).
+
+## Preview
+
+| | |
+| --- | --- |
+| ![Preview 1](images/1.png) | ![Preview 2](images/2.png) |
+| ![Preview 3](images/3.png) | ![Preview 4](images/4.png) |
+| ![Preview 5](images/5.png) | |
+
 ## Fitur
 
-- Web UI (tanpa CLI) untuk scan + clip
+### Core Features
+- Scans YouTube videos (URL)
+- Extracts YouTube Most Replayed (heatmap) segments
+- Automatically selects high-engagement moments
+- Configurable pre and post padding for each clip
+- Outputs 9:16 vertical video format (720x1280)
+- No YouTube API key required
+- Supports standard YouTube videos and Shorts
+
+### Advanced Features
+
+- 3 Crop Modes:
+  - Default: Center crop from original video
+  - Split Left: Top = center content, Bottom = bottom-left (facecam)
+  - Split Right: Top = center content, Bottom = bottom-right (facecam)
+- AI Auto Subtitle (Faster-Whisper):
+  - 4-5x faster than standard Whisper
+  - Support for Indonesian language (and 99+ languages)
+  - Multiple model sizes: tiny, base, small, medium, large
+  - Automatic transcription and subtitle burning
+  - Customizable subtitle style
+
+### Web UI Extras
+
+- Web UI (tanpa CLI) buat scan + clip
 - Preview metadata video (judul, channel, durasi, thumbnail)
 - Scan Most Replayed → list segments + preview per segment
 - Select segments (multi select) + tombol Create Selected Clip
 - Custom start/end (manual) buat potong satu range
 - Output ratio: 9:16, 1:1, 16:9, original
-- Crop mode:
-  - Default (center crop)
-  - Split Left (atas gameplay/center, bawah facecam kiri)
-  - Split Right (atas gameplay/center, bawah facecam kanan)
 - Subtitle (opsional):
   - Faster-Whisper model selection (tiny → large-v3)
   - Pilih font (Plus Jakarta Sans / Roboto / Montserrat / Arial / Custom)
@@ -255,8 +285,9 @@ MIT License
 
 ---
 
-## Credits
+## Credits & Special Thanks
 
+- Special thanks to proyek original (versi CLI) yang jadi pondasi: https://github.com/0xACAB666/yt-heatmap-clipper
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) - YouTube video downloader
 - [FFmpeg](https://ffmpeg.org/) - Video processing
 - [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) - AI transcription
