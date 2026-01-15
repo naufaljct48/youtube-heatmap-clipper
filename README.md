@@ -8,15 +8,16 @@ Ini versi web dari proyek original: https://github.com/0xACAB666/yt-heatmap-clip
 
 ## Preview
 
-| | |
-| --- | --- |
+|                            |                            |
+| -------------------------- | -------------------------- |
 | ![Preview 1](images/1.png) | ![Preview 2](images/2.png) |
 | ![Preview 3](images/3.png) | ![Preview 4](images/4.png) |
-| ![Preview 5](images/5.png) | |
+| ![Preview 5](images/5.png) |                            |
 
 ## Fitur
 
 ### Core Features
+
 - Scans YouTube videos (URL)
 - Extracts YouTube Most Replayed (heatmap) segments
 - Automatically selects high-engagement moments
@@ -54,12 +55,22 @@ Ini versi web dari proyek original: https://github.com/0xACAB666/yt-heatmap-clip
 
 ## Requirements
 
-- Python 3.8+
-- FFmpeg (wajib)
+- Python 3.8+ (Python 3.11 recommended)
+- **FFmpeg (REQUIRED)**
 - Internet connection
 - Optional: `faster-whisper` (kalau subtitle ON)
 
-## Install (Windows)
+## Cara Pakai (Paling Gampang)
+
+Cukup double-click file **`start.bat`**.
+Script ini bakal otomatis:
+
+1. Cek & Install requirements
+2. Bikin environment Python yang aman
+3. Cek FFmpeg
+4. Jalanin aplikasi web
+
+## Install (Manual)
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -112,6 +123,15 @@ Argumen penting:
 ## FFmpeg
 
 FFmpeg harus bisa dipanggil dari PATH. Di Windows, app juga coba auto-detect kalau FFmpeg di-install via WinGet.
+
+**Cara install paling gampang (Windows):**
+Buka PowerShell sebagai Administrator, lalu jalankan:
+
+```powershell
+winget install Gyan.FFmpeg
+```
+
+Setelah install, **RESTART** terminal atau VS Code kamu biar FFmpeg kebaca.
 
 ### Whisper Model Comparison
 
@@ -276,29 +296,3 @@ Contributions are welcome! Feel free to:
 
 - Report bugs
 - Suggest features
-- Submit pull requests
-- Improve documentation
-
----
-
-## License
-
-MIT License
-
----
-
-## Credits & Special Thanks
-
-- Special thanks to proyek original (versi CLI) yang jadi pondasi: https://github.com/0xACAB666/yt-heatmap-clipper
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - YouTube video downloader
-- [FFmpeg](https://ffmpeg.org/) - Video processing
-- [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) - AI transcription
-- [OpenAI Whisper](https://github.com/openai/whisper) - Speech recognition model
-
----
-
-## Support
-
-If you find this tool useful, please ⭐ star this repository!
-
-For issues and questions, please open an issue on GitHub.

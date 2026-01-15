@@ -130,14 +130,18 @@ def build_cover_scale_crop_vf(out_w, out_h):
     return f"{scale},{crop}"
 
 
+def build_cover_scale_vf(out_w, out_h):
+    ar_expr = f"{out_w}/{out_h}"
+    scale = f"scale='if(gte(iw/ih,{ar_expr}),-2,{out_w})':'if(gte(iw/ih,{ar_expr}),{out_h},-2)'"
+    return scale
+
+
 def get_split_heights(out_h):
     if not out_h:
         return None, None
     bottom = min(BOTTOM_HEIGHT, max(1, out_h - 1))
     top = max(1, out_h - bottom)
     return top, bottom
-
-
 def extract_video_id(url):
     """
     Extract the YouTube video ID from a given URL.
@@ -506,13 +510,13 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 ]
             else:
                 top_h, bottom_h = get_split_heights(out_h)
-                scaled = build_cover_scale_crop_vf(out_w, out_h)
+                scaled = build_cover_scale_vf(out_w, out_h)
                 vf = (
                     f"{scaled}[scaled];"
                     f"[scaled]split=2[s1][s2];"
                     f"[s1]crop={out_w}:{top_h}:(iw-{out_w})/2:(ih-{out_h})/2[top];"
                     f"[s2]crop={out_w}:{bottom_h}:0:ih-{bottom_h}[bottom];"
-                    f"[top][bottom]vstack=inputs=2[out]"
+                    f"[top][bottom]vstack[out]"
                 )
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
@@ -536,13 +540,13 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 ]
             else:
                 top_h, bottom_h = get_split_heights(out_h)
-                scaled = build_cover_scale_crop_vf(out_w, out_h)
+                scaled = build_cover_scale_vf(out_w, out_h)
                 vf = (
                     f"{scaled}[scaled];"
                     f"[scaled]split=2[s1][s2];"
                     f"[s1]crop={out_w}:{top_h}:(iw-{out_w})/2:(ih-{out_h})/2[top];"
                     f"[s2]crop={out_w}:{bottom_h}:iw-{out_w}:ih-{bottom_h}[bottom];"
-                    f"[top][bottom]vstack=inputs=2[out]"
+                    f"[top][bottom]vstack[out]"
                 )
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",

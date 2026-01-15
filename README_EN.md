@@ -1,6 +1,6 @@
 # YouTube Heatmap Clipper 🎬
 
-[🇮🇩 Bahasa Indonesia](README.md) | 🇺🇸 **English** 
+[🇮🇩 Bahasa Indonesia](README.md) | 🇺🇸 **English**
 
 A web application to extract the most engaging moments from YouTube videos using "Most Replayed" (heatmap) data, and automatically convert them into vertical-ready clips for Shorts, Reels, and TikTok — featuring AI-powered subtitles.
 
@@ -8,15 +8,16 @@ This is the web version of the original project: https://github.com/0xACAB666/yt
 
 ## Preview
 
-| | |
-| --- | --- |
+|                            |                            |
+| -------------------------- | -------------------------- |
 | ![Preview 1](images/1.png) | ![Preview 2](images/2.png) |
 | ![Preview 3](images/3.png) | ![Preview 4](images/4.png) |
-| ![Preview 5](images/5.png) | |
+| ![Preview 5](images/5.png) |                            |
 
 ## Features
 
 ### Core Features
+
 - Scans YouTube videos via URL
 - Extracts YouTube "Most Replayed" (heatmap) segments
 - Automatically selects high-engagement moments
@@ -54,19 +55,29 @@ This is the web version of the original project: https://github.com/0xACAB666/yt
 
 ## Requirements
 
-- Python 3.8+
-- FFmpeg (Required)
+- Python 3.8+ (Python 3.11 recommended)
+- **FFmpeg (REQUIRED)**
 - Internet connection
-- Optional: `faster-whisper` (if subtitles are enabled)
+- Optional: `faster-whisper` (for AI subtitles)
 
-## Installation (Windows)
+## How to Use (Easiest Way)
+
+Just double-click the **`start.bat`** file.
+This script will automatically:
+
+1. Check & Install all requirements
+2. Create a safe Python environment (venv)
+3. Check for FFmpeg
+4. Run the web application
+
+## Installation (Manual)
 
 ```powershell
 python -m pip install -r requirements.txt
 python -m pip install faster-whisper
 ```
 
-*Note: Skip `faster-whisper` if you don't need subtitle support.*
+_Note: Skip `faster-whisper` if you don't need subtitle support._
 
 ## Run Web App
 
@@ -75,6 +86,7 @@ python webapp.py
 ```
 
 Access at:
+
 - http://127.0.0.1:5000/
 
 ## How to Use (Web)
@@ -112,6 +124,15 @@ python run.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --crop default --
 
 FFmpeg must be accessible via your system PATH. On Windows, the app also attempts to auto-detect FFmpeg if installed via WinGet.
 
+**Easiest way to install (Windows):**
+Open PowerShell as Administrator and run:
+
+```powershell
+winget install Gyan.FFmpeg
+```
+
+After installation, **RESTART** your terminal or VS Code for FFmpeg to be recognized.
+
 ### Whisper Model Comparison
 
 | Model        | Size   | RAM     | Speed (60s) | Accuracy  | Best For                |
@@ -129,6 +150,7 @@ FFmpeg must be accessible via your system PATH. On Windows, the app also attempt
 ## Output
 
 ### Video Specifications
+
 - **Format**: MP4 (H.264 video + AAC audio)
 - **Resolution**: 720x1280 (9:16 vertical)
 - **Video Codec**: libx264, CRF 26, `ultrafast` preset
@@ -136,12 +158,14 @@ FFmpeg must be accessible via your system PATH. On Windows, the app also attempt
 - **Subtitles**: Burned-in (if enabled), white text with black outline
 
 ### File Naming
+
 ```
 clips/
 ├── clip_1.mp4
 ├── clip_2.mp4
 └── clip_3.mp4
 ```
+
 Clips are numbered based on their engagement score (highest first).
 
 ---
@@ -149,6 +173,7 @@ Clips are numbered based on their engagement score (highest first).
 ## Crop Mode Visualization
 
 ### Mode 1: Default (Center Crop)
+
 ```
 Original Video (16:9)         Output (9:16)
 ┌─────────────────────┐       ┌──────┐
@@ -158,6 +183,7 @@ Original Video (16:9)         Output (9:16)
 ```
 
 ### Mode 2: Split Left (Facecam Bottom-Left)
+
 ```
 Original Video (16:9)                Output (9:16)
 ┌─────────────────────────┐         ┌──────────┐
@@ -169,13 +195,14 @@ Original Video (16:9)                Output (9:16)
 ```
 
 ### Mode 3: Split Right (Facecam Bottom-Right)
+
 ```
 Original Video (16:9)                Output (9:16)
 ┌─────────────────────────┐         ┌──────────┐
 │                         │         │  GAME    │ 960px
 │       GAME AREA         │   -->   │ CONTENT  │
 │                   [👤]  │         ├──────────┤
-└─────────────────────────┘         │ FACE 👤  │ 350px
+└─────────────────────────┘         │ 👤 FACE  │ 350px
     facecam bottom-right            └──────────┘
 ```
 
@@ -184,6 +211,7 @@ Original Video (16:9)                Output (9:16)
 ## Troubleshooting
 
 ### FFmpeg not found
+
 ```bash
 # Windows: Download from https://ffmpeg.org/download.html
 # Add to PATH or place ffmpeg.exe in script directory
@@ -196,21 +224,25 @@ sudo apt install ffmpeg
 ```
 
 ### No high-engagement segments found
+
 - The video might not have "Most Replayed" data yet (requires sufficient views/engagement).
 - Try lowering the `MIN_SCORE` (e.g., from 0.40 to 0.30).
 - Verify the YouTube URL is correct.
 
 ### Subtitle generation fails
+
 - Ensure an active internet connection for the initial model download.
 - Check available RAM (Whisper needs ~500MB-2GB depending on the model).
 - Try a smaller model: change `WHISPER_MODEL` from `small` to `tiny`.
 
 ### Slow transcription
+
 - Use a smaller model (`tiny` instead of `small`).
 - Faster-Whisper is already 4-5x faster than standard Whisper.
 - Consider upgrading RAM or using the GPU version.
 
 ### Video download fails
+
 - Check your internet connection.
 - Verify the YouTube URL is accessible.
 - Some videos might be region-locked or have age restrictions.
@@ -221,27 +253,49 @@ sudo apt install ffmpeg
 ## Tips & Best Practices
 
 ### For Gaming Content
+
 - Use **Split Right** or **Split Left** mode to include the facecam.
-- Keep `PADDING = 10` to provide context before and after the action.
+- Keep `PADDING = 10` for context before and after action.
 - Use `small` or `base` models for accurate gaming terminology.
 
 ### For Tutorial/Vlog Content
+
 - Use **Default** center crop mode.
 - Increase `MAX_DURATION = 90` for longer explanations.
 - Enable subtitles with the `tiny` model for rapid processing.
 
 ### For Fast-Paced Content
+
 - Reduce `PADDING = 5` to keep clips tight.
 - Increase `MIN_SCORE = 0.50` to capture only peak moments.
 - Use the `tiny` model to match the quick editing style.
+
+### Subtitle Customization
+
+Edit line ~368 in `run.py` to customize subtitle style:
+
+```python
+# Current style (white text, black outline):
+BorderStyle=1,Outline=3,Shadow=2,MarginV=30
+
+# Large text:
+FontSize=28,Outline=4
+
+# Position higher (avoid facecam):
+MarginV=400
+
+# Different color (yellow):
+PrimaryColour=&H00FFFF
+```
 
 ---
 
 ## Contributing
 
 Contributions are welcome! Feel free to:
+
 - Report bugs
-- Suggest new features
+- Suggest features
 - Submit pull requests
 - Improve documentation
 
