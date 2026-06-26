@@ -88,7 +88,7 @@ def run_job(job_id, payload):
 
         url = (payload.get("url") or "").strip()
         if not url:
-            raise ValueError("URL kosong")
+            raise ValueError("URL is empty")
 
         crop = payload.get("crop") or "default"
         ratio = payload.get("ratio") or "9:16"
@@ -115,10 +115,10 @@ def run_job(job_id, payload):
         os.makedirs(job_dir, exist_ok=True)
         core.OUTPUT_DIR = job_dir
 
-        core.cek_dependensi._args = SimpleNamespace(no_update_ytdlp=True)
-        ok = core.cek_dependensi(install_whisper=subtitle, fatal=False)
+        core.check_dependencies._args = SimpleNamespace(no_update_ytdlp=True)
+        ok = core.check_dependencies(install_whisper=subtitle, fatal=False)
         if not ok:
-            raise RuntimeError("FFmpeg tidak ketemu")
+            raise RuntimeError("FFmpeg not found")
 
         video_id = core.extract_video_id(url)
         if not video_id:
@@ -129,7 +129,7 @@ def run_job(job_id, payload):
         targets = []
         picked = payload.get("segments")
         if isinstance(picked, list) and len(picked) > 0:
-            add_log(job_id, f"Pakai {len(picked)} segment yang dipilih...")
+            add_log(job_id, f"Using {len(picked)} selected segment(s)...")
             for seg in picked:
                 try:
                     start = float(seg.get("start"))
@@ -141,20 +141,20 @@ def run_job(job_id, payload):
                     continue
                 targets.append({"start": start, "duration": dur, "score": score})
             if not targets:
-                raise ValueError("Segment pilihan invalid")
+                raise ValueError("Selected segments are invalid")
         elif mode == "custom":
             start_s = parse_time_to_seconds(payload.get("start"))
             end_s = parse_time_to_seconds(payload.get("end"))
             if start_s is None or end_s is None:
-                raise ValueError("Start/End belum diisi")
+                raise ValueError("Start/End not provided")
             if end_s <= start_s:
-                raise ValueError("End harus lebih besar dari Start")
+                raise ValueError("End must be greater than Start")
             targets = [{"start": float(start_s), "duration": float(end_s - start_s), "score": 1.0}]
         else:
-            add_log(job_id, "Scan heatmap...")
-            segments = core.ambil_most_replayed(video_id)
+            add_log(job_id, "Scanning heatmap...")
+            segments = core.fetch_most_replayed(video_id)
             if not segments:
-                raise RuntimeError("Tidak ada heatmap/Most Replayed data")
+                raise RuntimeError("No heatmap/Most Replayed data available")
             targets = segments[: max(1, max_clips or 10)]
 
         set_job(job_id, total=len(targets), done=0, status_text="processing")
@@ -169,7 +169,7 @@ def run_job(job_id, payload):
         success = 0
         for idx, item in enumerate(targets, start=1):
             set_job(job_id, current=idx, status_text=f"clip {idx}/{len(targets)}")
-            ok = core.proses_satu_clip(video_id, item, idx, total_duration, crop, subtitle, event_hook=event_hook)
+            ok = core.process_single_clip(video_id, item, idx, total_duration, crop, subtitle, event_hook=event_hook)
             if ok:
                 success += 1
             set_job(job_id, done=idx, success=success, outputs=list_outputs(job_dir))
@@ -191,7 +191,7 @@ def serve_font(filename):
 def get_preview(url):
     key = url.strip()
     if not key:
-        raise ValueError("URL kosong")
+        raise ValueError("URL is empty")
 
     with preview_lock:
         cached = preview_cache.get(key)
@@ -208,7 +208,7 @@ def get_preview(url):
     ]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
-        raise RuntimeError((res.stderr or res.stdout or "Gagal ambil metadata").strip())
+        raise RuntimeError((res.stderr or res.stdout or "Failed to fetch metadata").strip())
 
     raw = json.loads(res.stdout)
     item = raw["entries"][0] if isinstance(raw, dict) and "entries" in raw and raw.get("entries") else raw
@@ -249,12 +249,12 @@ def api_scan():
     if not video_id:
         return jsonify({"ok": False, "error": "URL YouTube invalid"}), 400
 
-    core.cek_dependensi._args = SimpleNamespace(no_update_ytdlp=True)
-    ok = core.cek_dependensi(install_whisper=False, fatal=False)
+    core.check_dependencies._args = SimpleNamespace(no_update_ytdlp=True)
+    ok = core.check_dependencies(install_whisper=False, fatal=False)
     if not ok:
-        return jsonify({"ok": False, "error": "FFmpeg tidak ketemu"}), 400
+        return jsonify({"ok": False, "error": "FFmpeg not found"}), 400
 
-    segments = core.ambil_most_replayed(video_id)
+    segments = core.fetch_most_replayed(video_id)
     total = core.get_duration(video_id)
     return jsonify({"ok": True, "video_id": video_id, "duration": total, "segments": segments})
 
@@ -305,4 +305,7 @@ def serve_clip(job_id, filename):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    # Default to 5050 to avoid macOS AirPlay Receiver, which squats on 5000.
+    # Override with the PORT environment variable if needed.
+    port = int(os.environ.get("PORT", "5050"))
+    app.run(host="127.0.0.1", port=port, debug=True)

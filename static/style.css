@@ -116,41 +116,6 @@ textarea {
   align-items: center;
 }
 
-.langSwitch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: 10px;
-}
-
-.langBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, .18);
-  color: rgba(255, 255, 255, .86);
-  cursor: pointer;
-}
-
-.langBtn:hover {
-  border-color: rgba(124, 58, 237, .55);
-}
-
-.langBtn.isActive {
-  border-color: rgba(124, 58, 237, .78);
-  background: rgba(109, 40, 217, .16);
-}
-
-.flag {
-  width: 18px;
-  height: 12px;
-  border-radius: 3px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12) inset;
-}
 
 .ghLink {
   display: inline-flex;

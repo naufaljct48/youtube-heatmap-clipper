@@ -1,10 +1,8 @@
 # YouTube Heatmap Clipper 🎬
 
-🇮🇩 **Bahasa Indonesia** | [🇺🇸 English](README_EN.md)
+A web application to extract the most engaging moments from YouTube videos using "Most Replayed" (heatmap) data, and automatically convert them into vertical-ready clips for Shorts, Reels, and TikTok — featuring AI-powered subtitles.
 
-Web app buat ngambil momen paling “rame” dari video YouTube lewat data Most Replayed (heatmap), terus otomatis jadiin clip vertikal yang siap buat Shorts/Reels/TikTok — lengkap dengan opsi subtitle AI.
-
-Ini versi web dari proyek original: https://github.com/0xACAB666/yt-heatmap-clipper (yang CLI-nya galak, yang web-nya lebih “manusiawi”).
+This is the web version of the original project: https://github.com/0xACAB666/yt-heatmap-clipper (making the powerful CLI version more "human-friendly").
 
 ## Preview
 
@@ -14,12 +12,12 @@ Ini versi web dari proyek original: https://github.com/0xACAB666/yt-heatmap-clip
 | ![Preview 3](images/3.png) | ![Preview 4](images/4.png) |
 | ![Preview 5](images/5.png) |                            |
 
-## Fitur
+## Features
 
 ### Core Features
 
-- Scans YouTube videos (URL)
-- Extracts YouTube Most Replayed (heatmap) segments
+- Scans YouTube videos via URL
+- Extracts YouTube "Most Replayed" (heatmap) segments
 - Automatically selects high-engagement moments
 - Configurable pre and post padding for each clip
 - Outputs 9:16 vertical video format (720x1280)
@@ -28,56 +26,54 @@ Ini versi web dari proyek original: https://github.com/0xACAB666/yt-heatmap-clip
 
 ### Advanced Features
 
-- 3 Crop Modes:
-  - Default: Center crop from original video
-  - Split Left: Top = center content, Bottom = bottom-left (facecam)
-  - Split Right: Top = center content, Bottom = bottom-right (facecam)
-- AI Auto Subtitle (Faster-Whisper):
+- **3 Crop Modes**:
+  - **Default**: Center crop from the original video
+  - **Split Left**: Top = center content, Bottom = bottom-left (facecam)
+  - **Split Right**: Top = center content, Bottom = bottom-right (facecam)
+- **AI Auto Subtitle (Faster-Whisper)**:
   - 4-5x faster than standard Whisper
-  - Support for Indonesian language (and 99+ languages)
+  - Supports 99+ languages including Indonesian and English
   - Multiple model sizes: tiny, base, small, medium, large
   - Automatic transcription and subtitle burning
-  - Customizable subtitle style
+  - Customizable subtitle styles
 
 ### Web UI Extras
 
-- Web UI (tanpa CLI) buat scan + clip
-- Preview metadata video (judul, channel, durasi, thumbnail)
-- Scan Most Replayed → list segments + preview per segment
-- Select segments (multi select) + tombol Create Selected Clip
-- Custom start/end (manual) buat potong satu range
-- Output ratio: 9:16, 1:1, 16:9, original
-- Subtitle (opsional):
+- **Clean Web Interface**: No CLI required for scanning and clipping
+- **Video Metadata Preview**: View title, channel, duration, and thumbnail
+- **Heatmap Visualization**: List segments with individual previews
+- **Batch Processing**: Multi-select segments and "Create Selected Clips"
+- **Custom Ranges**: Manually set Start/End times for custom clipping
+- **Multiple Aspect Ratios**: 9:16, 1:1, 16:9, or original ratio
+- **Advanced Subtitle Options**:
   - Faster-Whisper model selection (tiny → large-v3)
-  - Pilih font (Plus Jakarta Sans / Roboto / Montserrat / Arial / Custom)
-  - Pilih lokasi subtitle (Bottom / Centered)
-  - Fonts dir support (folder fonts berisi .ttf/.otf)
+  - Font selection (Plus Jakarta Sans, Roboto, Montserrat, Arial, or Custom)
+  - Subtitle positioning (Bottom or Centered)
+  - Custom fonts directory support
 
 ## Requirements
 
-- Python 3.8+ (Python 3.11 recommended)
-- **FFmpeg (REQUIRED)**
+- Python 3.10+ (3.13 recommended; required for HD on macOS — see [Running on macOS](#running-on-macos))
+- **FFmpeg (REQUIRED)** — use `ffmpeg-full` on macOS for subtitle support
 - Internet connection
-- Optional: `faster-whisper` (kalau subtitle ON)
+- Optional: `faster-whisper` (for AI subtitles)
+- Optional (HD downloads): Node.js + `deno` + the bgutil PO Token provider
 
-## Cara Pakai (Paling Gampang)
+## How to Use (Easiest Way)
 
-Cukup double-click file **`start.bat`**.
-Script ini bakal otomatis:
+- **Windows**: double-click the **`start.bat`** file. It will check/install
+  requirements, create a venv, check for FFmpeg, and run the web app.
+- **macOS / Linux**: run **`./start.sh`** in a terminal. It launches the web app
+  using the project's Python 3.13 venv (see [Running on macOS](#running-on-macos)).
 
-1. Cek & Install requirements
-2. Bikin environment Python yang aman
-3. Cek FFmpeg
-4. Jalanin aplikasi web
-
-## Install (Manual)
+## Installation (Manual)
 
 ```powershell
 python -m pip install -r requirements.txt
 python -m pip install faster-whisper
 ```
 
-Kalau nggak butuh subtitle, skip `faster-whisper`.
+_Note: Skip `faster-whisper` if you don't need subtitle support._
 
 ## Run Web App
 
@@ -85,53 +81,103 @@ Kalau nggak butuh subtitle, skip `faster-whisper`.
 python webapp.py
 ```
 
-Buka:
+Access at:
 
-- http://127.0.0.1:5000/
+- http://127.0.0.1:5050/
 
-## Cara Pakai (Web)
+_The app listens on port **5050** by default (port 5000 is avoided because macOS
+AirPlay Receiver uses it). Override with the `PORT` environment variable, e.g.
+`PORT=8080 ./start.sh`._
 
-1. Tempel YouTube URL → otomatis muncul preview
-2. Mode:
-   - Scan heatmap: klik Scan Heatmap → pilih segment → Create Selected Clip
-   - Custom: isi Start/End → Buat Clip
-3. Set Ratio, Crop, Padding, Subtitle (opsional)
-4. Progress panel bakal nampilin output + tombol Play/Download
+## Running on macOS
 
-## Run CLI (opsional)
+> **Important:** On macOS, run the app with **`./start.sh`** (or
+> `venv/bin/python webapp.py`) — **not** plain `python3 webapp.py`.
+
+macOS ships with an old Python (3.9) that the latest `yt-dlp` no longer supports.
+Stuck on 3.9, downloads are capped at **360p** (or fail with HTTP 403). To get HD
+(up to 1080p) the app must run under a modern Python with an up-to-date `yt-dlp`
+plus a PO Token provider. One-time setup:
+
+1. **Install the toolchain** (Homebrew):
+
+   ```bash
+   brew install python@3.13 ffmpeg-full deno
+   ```
+
+   `ffmpeg-full` is required for burned-in subtitles — the regular `ffmpeg`
+   formula is built without `libass`.
+
+2. **Create the project venv (Python 3.13) and install dependencies:**
+
+   ```bash
+   python3.13 -m venv venv
+   venv/bin/pip install -r requirements.txt
+   venv/bin/pip install -U "yt-dlp[default]" faster-whisper bgutil-ytdlp-pot-provider
+   ```
+
+3. **Set up the PO Token provider** (unlocks HD via YouTube "SABR" streaming):
+
+   ```bash
+   git clone --single-branch --branch 1.3.1 \
+     https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git \
+     ~/bgutil-ytdlp-pot-provider
+   cd ~/bgutil-ytdlp-pot-provider/server && npm ci && npx tsc
+   ```
+
+4. **Run it:**
+
+   ```bash
+   ./start.sh
+   ```
+
+If the PO Token provider is missing or fails, the app automatically falls back to
+a 360p download so it still works — just at lower quality. If HD breaks after a
+YouTube change, update yt-dlp: `venv/bin/pip install -U "yt-dlp[default]"`.
+
+## How to Use (Web)
+
+1. **Paste YouTube URL**: Video preview will appear automatically.
+2. **Choose Mode**:
+   - **Scan Heatmap**: Click "Scan Heatmap" → Select segments → "Create Selected Clips".
+   - **Custom Range**: Enter manual Start/End times → "Create Clip".
+3. **Configure**: Set Ratio, Crop, Padding, and Subtitles (optional).
+4. **Progress**: Monitor the progress panel for output logs and Download/Play buttons.
+
+## Run CLI (Optional)
 
 ```powershell
 python run.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --crop default --subtitle y --whisper-model small --subtitle-font "Plus Jakarta Sans" --subtitle-fontsdir "fonts" --subtitle-location bottom --ratio 9:16
 ```
 
-Argumen penting:
+### Key Arguments:
 
-- `--crop`: default | split_left | split_right
-- `--ratio`: 9:16 | 1:1 | 16:9 | original
-- `--subtitle`: y | n
-- `--whisper-model`: tiny | base | small | medium | large-v3
-- `--subtitle-font`: nama font (mis. Poppins)
-- `--subtitle-fontsdir`: folder font .ttf/.otf (default: fonts)
-- `--subtitle-location`: bottom | center
+- `--crop`: `default` | `split_left` | `split_right`
+- `--ratio`: `9:16` | `1:1` | `16:9` | `original`
+- `--subtitle`: `y` | `n`
+- `--whisper-model`: `tiny` | `base` | `small` | `medium` | `large-v3`
+- `--subtitle-font`: Font name (e.g., Poppins)
+- `--subtitle-fontsdir`: Folder containing .ttf/.otf files (default: `fonts`)
+- `--subtitle-location`: `bottom` | `center`
 
 ## Fonts
 
-- Taruh font di folder `fonts/` (mis. `fonts/Poppins/Poppins-Regular.ttf`)
-- Isi Fonts dir jadi `fonts`
-- Pilih font dari dropdown atau Custom (isi nama family font, contoh: `Poppins`)
+- Place font files in the `fonts/` directory (e.g., `fonts/Poppins/Poppins-Regular.ttf`).
+- Set "Fonts dir" to `fonts` in the UI.
+- Select your font from the dropdown or use "Custom" and type the font family name (e.g., `Poppins`).
 
 ## FFmpeg
 
-FFmpeg harus bisa dipanggil dari PATH. Di Windows, app juga coba auto-detect kalau FFmpeg di-install via WinGet.
+FFmpeg must be accessible via your system PATH. On Windows, the app also attempts to auto-detect FFmpeg if installed via WinGet.
 
-**Cara install paling gampang (Windows):**
-Buka PowerShell sebagai Administrator, lalu jalankan:
+**Easiest way to install (Windows):**
+Open PowerShell as Administrator and run:
 
 ```powershell
 winget install Gyan.FFmpeg
 ```
 
-Setelah install, **RESTART** terminal atau VS Code kamu biar FFmpeg kebaca.
+After installation, **RESTART** your terminal or VS Code for FFmpeg to be recognized.
 
 ### Whisper Model Comparison
 
@@ -143,7 +189,7 @@ Setelah install, **RESTART** terminal atau VS Code kamu biar FFmpeg kebaca.
 | **medium**   | 1.5 GB | ~3 GB   | ~40-50s     | Excellent | Professional work       |
 | **large-v3** | 2.9 GB | ~6 GB   | ~90-120s    | Best      | Production quality      |
 
-> **Recommendation**: Use `tiny` for speed, `small` for quality balance
+> **Recommendation**: Use `tiny` for speed, `small` for a balance of quality and speed.
 
 ---
 
@@ -153,9 +199,9 @@ Setelah install, **RESTART** terminal atau VS Code kamu biar FFmpeg kebaca.
 
 - **Format**: MP4 (H.264 video + AAC audio)
 - **Resolution**: 720x1280 (9:16 vertical)
-- **Video Codec**: libx264, CRF 26, ultrafast preset
+- **Video Codec**: libx264, CRF 26, `ultrafast` preset
 - **Audio Codec**: AAC, 128 kbps
-- **Subtitle**: Burned-in (if enabled), white text with black outline
+- **Subtitles**: Burned-in (if enabled), white text with black outline
 
 ### File Naming
 
@@ -202,7 +248,7 @@ Original Video (16:9)                Output (9:16)
 │                         │         │  GAME    │ 960px
 │       GAME AREA         │   -->   │ CONTENT  │
 │                   [👤]  │         ├──────────┤
-└─────────────────────────┘         │ FACE 👤  │ 350px
+└─────────────────────────┘         │ 👤 FACE  │ 350px
     facecam bottom-right            └──────────┘
 ```
 
@@ -225,28 +271,28 @@ sudo apt install ffmpeg
 
 ### No high-engagement segments found
 
-- Video might not have "Most Replayed" data yet (needs views/engagement)
-- Try lowering `MIN_SCORE` (e.g., from 0.40 to 0.30)
-- Check if video URL is correct
+- The video might not have "Most Replayed" data yet (requires sufficient views/engagement).
+- Try lowering the `MIN_SCORE` (e.g., from 0.40 to 0.30).
+- Verify the YouTube URL is correct.
 
 ### Subtitle generation fails
 
-- Ensure internet connection for first-time model download
-- Check available RAM (whisper needs ~500MB-2GB depending on model)
-- Try smaller model: change `WHISPER_MODEL` from `small` to `tiny`
+- Ensure an active internet connection for the initial model download.
+- Check available RAM (Whisper needs ~500MB-2GB depending on the model).
+- Try a smaller model: change `WHISPER_MODEL` from `small` to `tiny`.
 
 ### Slow transcription
 
-- Use smaller model (`tiny` instead of `small`)
-- Faster-Whisper is already 4-5x faster than standard Whisper
-- Consider upgrading RAM or using GPU version
+- Use a smaller model (`tiny` instead of `small`).
+- Faster-Whisper is already 4-5x faster than standard Whisper.
+- Consider upgrading RAM or using the GPU version.
 
 ### Video download fails
 
-- Check internet connection
-- Verify YouTube URL is accessible
-- Some videos might be region-locked or have restrictions
-- Try updating yt-dlp: `pip install -U yt-dlp`
+- Check your internet connection.
+- Verify the YouTube URL is accessible.
+- Some videos might be region-locked or have age restrictions.
+- Try updating yt-dlp: `pip install -U yt-dlp`.
 
 ---
 
@@ -254,21 +300,21 @@ sudo apt install ffmpeg
 
 ### For Gaming Content
 
-- Use **Split Right** or **Split Left** mode (facecam in corner)
-- Keep `PADDING = 10` for context before/after action
-- Use `small` or `base` model for accurate gaming terminology
+- Use **Split Right** or **Split Left** mode to include the facecam.
+- Keep `PADDING = 10` for context before and after action.
+- Use `small` or `base` models for accurate gaming terminology.
 
 ### For Tutorial/Vlog Content
 
-- Use **Default** center crop mode
-- Increase `MAX_DURATION = 90` for longer explanations
-- Enable subtitles with `tiny` model for fast processing
+- Use **Default** center crop mode.
+- Increase `MAX_DURATION = 90` for longer explanations.
+- Enable subtitles with the `tiny` model for rapid processing.
 
 ### For Fast-Paced Content
 
-- Reduce `PADDING = 5` to keep clips tight
-- Increase `MIN_SCORE = 0.50` for only peak moments
-- Use `tiny` model to match quick content style
+- Reduce `PADDING = 5` to keep clips tight.
+- Increase `MIN_SCORE = 0.50` to capture only peak moments.
+- Use the `tiny` model to match the quick editing style.
 
 ### Subtitle Customization
 
@@ -296,3 +342,29 @@ Contributions are welcome! Feel free to:
 
 - Report bugs
 - Suggest features
+- Submit pull requests
+- Improve documentation
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Credits & Special Thanks
+
+- Special thanks to the original project (CLI version) which served as the foundation: https://github.com/0xACAB666/yt-heatmap-clipper
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - YouTube video downloader
+- [FFmpeg](https://ffmpeg.org/) - Video processing
+- [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) - AI transcription
+- [OpenAI Whisper](https://github.com/openai/whisper) - Speech recognition model
+
+---
+
+## Support
+
+If you find this tool useful, please ⭐ star this repository!
+
+For issues and questions, please open an issue on GitHub.

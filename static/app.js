@@ -1,73 +1,6 @@
 const $ = (id) => document.getElementById(id);
 
 const I18N = {
-  id: {
-    "top.tagline": "Scan Most Replayed, potong otomatis, subtitle rapi.",
-    "label.url": "YouTube URL",
-    "ph.url": "https://www.youtube.com/watch?v=...",
-    "help.url": "Tempel link video/shorts. Nanti keluar preview.",
-    "label.mode": "Mode",
-    "opt.mode.heatmap": "Scan heatmap (Most Replayed)",
-    "opt.mode.custom": "Custom start/end (manual)",
-    "help.mode": "Scan = cari momen paling rame. Custom = potong dari waktu yang kamu tentuin.",
-    "label.ratio": "Ratio",
-    "opt.ratio.9_16": "9:16 (Shorts)",
-    "opt.ratio.original": "Original",
-    "help.ratio": "Pilih bentuk output video. 9:16 buat Shorts/Reels/TikTok.",
-    "label.crop": "Crop",
-    "opt.crop.default": "Default",
-    "opt.crop.split_left": "Split Left",
-    "opt.crop.split_right": "Split Right",
-    "help.crop": "Split itu buat gaming: atas gameplay, bawah facecam.",
-    "label.padding": "Padding (detik)",
-    "help.padding": "Nambah detik sebelum & sesudah momen biar nggak “kepotong nanggung”.",
-    "label.max_clips": "Max clips",
-    "help.max_clips": "Berapa potongan yang mau dihasilkan dari heatmap.",
-    "label.subtitle": "Subtitle",
-    "opt.no": "No",
-    "opt.yes": "Yes",
-    "help.subtitle": "Kalau Yes, audio ditranskrip jadi teks lalu dibakar ke video.",
-    "label.whisper_model": "Model (Whisper)",
-    "help.whisper_model": "Ini model AI buat transkripsi suara ke teks. Makin besar makin akurat, makin berat.",
-    "label.subtitle_font": "Font Subtitle",
-    "opt.custom": "Custom…",
-    "ph.subtitle_font_custom": "Nama font custom (mis. Poppins)",
-    "help.subtitle_font": "Kalau font-nya ada di folder fonts, isi Fonts dir = fonts.",
-    "label.subtitle_location": "Subtitle Location",
-    "opt.subtitle_location.bottom": "Bottom",
-    "opt.subtitle_location.center": "Centered",
-    "help.subtitle_location": "Bottom = lebih natural buat Shorts. Centered = lebih “in your face”.",
-    "label.subtitle_fontsdir": "Fonts dir (opsional)",
-    "help.subtitle_fontsdir": "Folder berisi file .ttf/.otf buat subtitle. Default: folder project <b>fonts</b>.",
-    "label.start": "Start (detik atau mm:ss)",
-    "ph.start": "689 atau 11:29",
-    "label.end": "End (detik atau mm:ss)",
-    "ph.end": "742 atau 12:22",
-    "btn.scan": "Scan Heatmap",
-    "btn.clip": "Buat Clip",
-    "help.actions": "Scan Heatmap = ambil daftar momen “Most Replayed”. Buat Clip = download + crop + (opsional) subtitle.",
-    "panel.segments": "Segments",
-    "btn.select_all": "Select All",
-    "btn.clear": "Clear",
-    "btn.create_selected": "Create Selected Clip",
-    "panel.progress": "Progress",
-    "js.modal.preview_segment": "Preview Segment",
-    "js.modal.preview_clip": "Preview Clip",
-    "js.segments.empty": "Belum ada segment. Klik Scan Heatmap dulu.",
-    "js.preview.loading": "Loading preview…",
-    "js.progress.count": "{done}/{total} selesai • {success} sukses",
-    "js.selected.count": "{count} dipilih",
-    "js.stage.download": "Download",
-    "js.stage.crop": "Crop",
-    "js.stage.subtitle": "Subtitle",
-    "js.stage.subtitle_model_load": "Load model",
-    "js.stage.subtitle_transcribe": "Transcribe",
-    "js.stage.subtitle_write": "Tulis subtitle",
-    "js.stage.burn_subtitle": "Burn subtitle",
-    "js.stage.finalize": "Finalize",
-    "js.stage.done_clip": "Selesai",
-    "js.topprogress.processing": "Processing",
-  },
   en: {
     "top.tagline": "Scan Most Replayed, auto cut, clean subtitles.",
     "label.url": "YouTube URL",
@@ -137,11 +70,11 @@ const I18N = {
   },
 };
 
-let currentLang = "id";
+let currentLang = "en";
 
 function t(key, vars) {
-  const base = I18N[currentLang] || I18N.id;
-  const fallback = I18N.id || {};
+  const base = I18N[currentLang] || I18N.en;
+  const fallback = I18N.en || {};
   let s = base[key] ?? fallback[key] ?? key;
   if (vars && typeof s === "string") {
     Object.entries(vars).forEach(([k, v]) => {
@@ -272,8 +205,6 @@ function renderTopProgress(job) {
 
 function applyI18n() {
   document.documentElement.lang = currentLang;
-  $("langId")?.classList.toggle("isActive", currentLang === "id");
-  $("langEn")?.classList.toggle("isActive", currentLang === "en");
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
@@ -287,13 +218,6 @@ function applyI18n() {
   });
 }
 
-function setLang(lang) {
-  currentLang = lang === "en" ? "en" : "id";
-  localStorage.setItem("lang", currentLang);
-  applyI18n();
-  renderSegments(lastScanSegments);
-  updateSelectedUi();
-}
 
 function fmtTime(s) {
   const sec = Math.max(0, Math.floor(Number(s) || 0));
@@ -467,7 +391,7 @@ function renderSegments(segments) {
       </div>
       <div class="segMain">
         <div class="t">#${idx + 1} ${fmtTime(start)} → ${fmtTime(end)}</div>
-        <div class="m">durasi ${Math.round(dur)}s</div>
+        <div class="m">duration ${Math.round(dur)}s</div>
       </div>
       <div class="segSide">
         <div class="pill">${score.toFixed(2)}</div>
@@ -569,7 +493,7 @@ async function scan() {
     lastScanSegments = data.segments || [];
     selectedKeys = new Set();
     currentVideoId = data.video_id || currentVideoId;
-    $("segMeta").textContent = `${lastScanSegments.length} segments • durasi ~${fmtTime(data.duration || 0)}`;
+    $("segMeta").textContent = `${lastScanSegments.length} segments • duration ~${fmtTime(data.duration || 0)}`;
     renderSegments(lastScanSegments);
   } catch (e) {
     $("segMeta").textContent = e.message;
@@ -662,14 +586,11 @@ $("segClearBtn").addEventListener("click", clearSelectedSegments);
 $("segCreateBtn").addEventListener("click", clipSelected);
 $("modalClose").addEventListener("click", closeModal);
 $("modalBackdrop").addEventListener("click", closeModal);
-$("langId")?.addEventListener("click", () => setLang("id"));
-$("langEn")?.addEventListener("click", () => setLang("en"));
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
 
-currentLang = localStorage.getItem("lang") || document.documentElement.lang || "id";
-currentLang = currentLang === "en" ? "en" : "id";
+currentLang = "en";
 applyI18n();
 toggleMode();
 toggleFont();

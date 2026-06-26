@@ -45,12 +45,51 @@ def set_ratio_preset(preset):
         return
     raise ValueError("Invalid ratio preset")
 
-def ffmpeg_tersedia():
-    return bool(shutil.which("ffmpeg"))
+def pot_provider_args():
+    """
+    Return yt-dlp extractor-args that enable the bgutil PO Token provider, if it
+    is installed. YouTube serves HD formats only via "SABR" streaming, which
+    requires a GVS PO Token. The bgutil script (run via deno) generates that
+    token so yt-dlp can download up to 1080p instead of the 360p progressive
+    fallback. Without the provider this returns [], and the caller falls back to
+    the low-res android client.
+    """
+    candidates = [
+        os.path.expanduser("~/bgutil-ytdlp-pot-provider/server/build/generate_once.js"),
+    ]
+    script = next((p for p in candidates if os.path.isfile(p)), None)
+    if not script:
+        return []
+    # The bgutil script is executed via deno; make sure it is on PATH for the
+    # yt-dlp subprocess (Homebrew installs it outside the default PATH here).
+    if not shutil.which("deno"):
+        for deno_dir in ["/opt/homebrew/bin", "/usr/local/bin"]:
+            if os.path.isfile(os.path.join(deno_dir, "deno")):
+                os.environ["PATH"] = deno_dir + os.pathsep + os.environ.get("PATH", "")
+                break
+    return ["--extractor-args", f"youtubepot-bgutilscript:script_path={script}"]
 
 
-def coba_masukkan_ffmpeg_ke_path():
-    if ffmpeg_tersedia():
+def ffmpeg_available():
+    # Prefer ffmpeg-full (keg-only Homebrew build): the regular Homebrew ffmpeg
+    # formula is built WITHOUT libass, so the "subtitles" filter is missing and
+    # burning captions fails. Prepend the full build's bin dir so all "ffmpeg"
+    # subprocess calls resolve to it.
+    for full_dir in ["/opt/homebrew/opt/ffmpeg-full/bin", "/usr/local/opt/ffmpeg-full/bin"]:
+        if os.path.isfile(os.path.join(full_dir, "ffmpeg")):
+            os.environ["PATH"] = full_dir + os.pathsep + os.environ.get("PATH", "")
+            return True
+    if shutil.which("ffmpeg"):
+        return True
+    for candidate in ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"]:
+        if os.path.isfile(candidate):
+            os.environ["PATH"] = os.path.dirname(candidate) + os.pathsep + os.environ.get("PATH", "")
+            return True
+    return False
+
+
+def try_add_ffmpeg_to_path():
+    if ffmpeg_available():
         return True
 
     local_app_data = os.environ.get("LOCALAPPDATA")
@@ -72,7 +111,7 @@ def coba_masukkan_ffmpeg_ke_path():
         return False
 
     os.environ["PATH"] = f"{found_bin_dir};{os.environ.get('PATH', '')}"
-    return ffmpeg_tersedia()
+    return ffmpeg_available()
 
 
 def parse_args():
@@ -177,13 +216,13 @@ def get_model_size(model):
     return sizes.get(model, "unknown size")
 
 
-def cek_dependensi(install_whisper=False, fatal=True):
+def check_dependencies(install_whisper=False, fatal=True):
     """
     Ensure required dependencies are available.
     Automatically updates yt-dlp and checks FFmpeg availability.
     """
     global WHISPER_MODEL
-    args = getattr(cek_dependensi, "_args", None)
+    args = getattr(check_dependencies, "_args", None)
     skip_update = bool(getattr(args, "no_update_ytdlp", False)) if args else False
 
     if not skip_update:
@@ -228,8 +267,8 @@ def cek_dependensi(install_whisper=False, fatal=True):
             print(f"✅ Faster-Whisper package installed successfully.")
             print(f"⚠️  Model '{WHISPER_MODEL}' (~{get_model_size(WHISPER_MODEL)}) will be downloaded on first use.\n")
 
-    coba_masukkan_ffmpeg_ke_path()
-    if not ffmpeg_tersedia():
+    try_add_ffmpeg_to_path()
+    if not ffmpeg_available():
         print("FFmpeg not found. Please install FFmpeg and ensure it is in PATH.")
         if fatal:
             sys.exit(1)
@@ -237,7 +276,7 @@ def cek_dependensi(install_whisper=False, fatal=True):
     return True
 
 
-def ambil_most_replayed(video_id):
+def fetch_most_replayed(video_id):
     """
     Fetch and parse YouTube 'Most Replayed' heatmap data.
     Returns a list of high-engagement segments.
@@ -342,7 +381,9 @@ def generate_subtitle(video_file, subtitle_file, event_hook=None):
                 event_hook("stage", {"stage": "subtitle_transcribe"})
             except Exception:
                 pass
-        segments, info = model.transcribe(video_file, language="id")
+        # language=None lets Whisper auto-detect the spoken language so captions
+        # match the video's audio instead of being forced to one language.
+        segments, info = model.transcribe(video_file, language=None)
         return segments
 
     try:
@@ -351,8 +392,8 @@ def generate_subtitle(video_file, subtitle_file, event_hook=None):
         msg = str(e)
         if os.name == "nt" and "WinError 1314" in msg:
             print(f"  Failed to generate subtitle: {msg}")
-            print("  Windows kamu kelihatan tidak mengizinkan symlink (HuggingFace cache).")
-            print("  Retrying sekali lagi (biasanya langsung beres setelah fallback cache aktif)...")
+            print("  Your Windows appears to disallow symlinks (HuggingFace cache).")
+            print("  Retrying once more (usually works after the cache fallback kicks in)...")
             try:
                 segments = load_and_transcribe()
             except Exception as e2:
@@ -392,7 +433,7 @@ def format_timestamp(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
-def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default", use_subtitle=False, event_hook=None):
+def process_single_clip(video_id, item, index, total_duration, crop_mode="default", use_subtitle=False, event_hook=None):
     """
     Download, crop, and export a single vertical clip
     based on a heatmap segment.
@@ -411,6 +452,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         return False
 
     temp_file = f"temp_{index}.mkv"
+    full_file = f"temp_full_{index}.mkv"
     cropped_file = f"temp_cropped_{index}.mp4"
     subtitle_file = f"temp_{index}.srt"
     output_file = os.path.join(OUTPUT_DIR, f"clip_{index}.mp4")
@@ -425,35 +467,39 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         except Exception:
             pass
 
+    # Download the full video with yt-dlp's native downloader (handles YouTube
+    # auth/cookies correctly), then trim locally. Letting ffmpeg fetch the
+    # googlevideo URL directly (via --download-sections) triggers 403 errors.
+    #
+    # Primary path: use the bgutil PO Token provider so the default client can
+    # download HD (up to 1080p). YouTube gates HD behind "SABR" streaming, which
+    # needs a GVS PO Token.
     cmd_download = [
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
-        "--quiet", "--no-warnings",
-        "--downloader", "ffmpeg",
-        "--downloader-args",
-        f"ffmpeg_i:-ss {start} -to {end} -hide_banner -loglevel error",
+        *pot_provider_args(),
         "--merge-output-format", "mkv",
         "-f",
         "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
-        "-o", temp_file,
+        "-o", full_file,
         f"https://youtu.be/{video_id}"
     ]
+    # Fallback path: the "android" client serves a directly downloadable
+    # progressive format (360p) without needing a PO token. Used when the PO
+    # Token provider is unavailable or the primary download fails.
     cmd_download_fallback = [
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
-        "--quiet", "--no-warnings",
-        "--downloader", "ffmpeg",
-        "--downloader-args",
-        f"ffmpeg_i:-ss {start} -to {end} -hide_banner -loglevel error",
+        "--extractor-args", "youtube:player_client=android",
         "--merge-output-format", "mkv",
         "-f", "bv*+ba/b",
-        "-o", temp_file,
+        "-o", full_file,
         f"https://youtu.be/{video_id}"
     ]
 
     try:
         try:
-            subprocess.run(
+            res = subprocess.run(
                 cmd_download,
                 check=True,
                 stdout=subprocess.PIPE,
@@ -462,19 +508,42 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             )
         except subprocess.CalledProcessError as e:
             stderr = (e.stderr or "").strip()
-            if "Requested format is not available" in stderr:
-                subprocess.run(
-                    cmd_download_fallback,
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-            else:
-                raise
+            print(f"[yt-dlp error] {stderr}")
+            # Any primary failure (no PO token provider, SABR 403, format
+            # unavailable, etc.) falls back to the low-res android client so a
+            # clip is still produced.
+            print("  Retrying download with low-res fallback client...")
+            subprocess.run(
+                cmd_download_fallback,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+        if not os.path.exists(full_file):
+            print("Failed to download video.")
+            return False
+
+        # Trim the requested segment from the full download (stream copy = fast).
+        cmd_trim = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-ss", str(start), "-t", str(end - start),
+            "-i", full_file,
+            "-c", "copy",
+            temp_file
+        ]
+        subprocess.run(
+            cmd_trim,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        os.remove(full_file)
 
         if not os.path.exists(temp_file):
-            print("Failed to download video segment.")
+            print("Failed to trim video segment.")
             return False
 
         out_w, out_h = OUT_WIDTH, OUT_HEIGHT
@@ -644,7 +713,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
 
     except subprocess.CalledProcessError as e:
         # Cleanup temp files
-        for f in [temp_file, cropped_file, subtitle_file]:
+        for f in [temp_file, full_file, cropped_file, subtitle_file]:
             if os.path.exists(f):
                 try:
                     os.remove(f)
@@ -656,7 +725,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         return False
     except Exception as e:
         # Cleanup temp files
-        for f in [temp_file, cropped_file, subtitle_file]:
+        for f in [temp_file, full_file, cropped_file, subtitle_file]:
             if os.path.exists(f):
                 try:
                     os.remove(f)
@@ -673,7 +742,7 @@ def main():
     Main entry point of the application.
     """
     args = parse_args()
-    cek_dependensi._args = args
+    check_dependencies._args = args
 
     if args.whisper_model:
         global WHISPER_MODEL
@@ -691,12 +760,12 @@ def main():
         set_ratio_preset(args.ratio)
 
     if args.check:
-        cek_dependensi(install_whisper=False)
+        check_dependencies(install_whisper=False)
         print("✅ Basic dependencies OK.")
         return
 
-    coba_masukkan_ffmpeg_ke_path()
-    if not ffmpeg_tersedia():
+    try_add_ffmpeg_to_path()
+    if not ffmpeg_available():
         print("FFmpeg not found. Please install FFmpeg and ensure it is in PATH.")
         return
 
@@ -753,18 +822,18 @@ def main():
                 print("Invalid choice. Please enter y or n.")
 
         if use_subtitle:
-            print(f"✅ Subtitle enabled (Model: {WHISPER_MODEL}, Bahasa Indonesia)")
+            print(f"✅ Subtitle enabled (Model: {WHISPER_MODEL}, auto-detect language)")
         else:
             print("❌ Subtitle disabled")
 
         print()
 
-        cek_dependensi(install_whisper=use_subtitle)
+        check_dependencies(install_whisper=use_subtitle)
 
         if not link:
             link = input("Link YT: ").strip()
     else:
-        cek_dependensi(install_whisper=use_subtitle)
+        check_dependencies(install_whisper=use_subtitle)
 
     video_id = extract_video_id(link)
 
@@ -772,7 +841,7 @@ def main():
         print("Invalid YouTube link.")
         return
 
-    heatmap_data = ambil_most_replayed(video_id)
+    heatmap_data = fetch_most_replayed(video_id)
 
     if not heatmap_data:
         print("No high-engagement segments found.")
@@ -795,7 +864,7 @@ def main():
         if success_count >= MAX_CLIPS:
             break
 
-        if proses_satu_clip(
+        if process_single_clip(
             video_id,
             item,
             success_count + 1,
