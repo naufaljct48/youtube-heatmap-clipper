@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import subprocess
 import sys
 import threading
@@ -16,6 +17,7 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 
 jobs_lock = threading.Lock()
 jobs = {}
+JOB_ID_RE = re.compile(r"[0-9a-f]{12}")
 preview_lock = threading.Lock()
 preview_cache = {}
 
@@ -300,9 +302,16 @@ def api_job(job_id):
 
 @app.get("/clips/<job_id>/<path:filename>")
 def serve_clip(job_id, filename):
+    # job ids are uuid4().hex[:12]; reject anything else (e.g. "..") so the
+    # route cannot be used to download files outside the clips folder.
+    if not JOB_ID_RE.fullmatch(job_id):
+        return jsonify({"ok": False, "error": "Job not found"}), 404
     job_dir = os.path.join("clips", job_id)
     return send_from_directory(job_dir, filename, as_attachment=True)
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    # The Werkzeug debugger allows arbitrary code execution, so it stays off
+    # unless explicitly enabled for local development (YHC_DEBUG=1).
+    debug = os.environ.get("YHC_DEBUG") == "1"
+    app.run(host="127.0.0.1", port=5000, debug=debug)
